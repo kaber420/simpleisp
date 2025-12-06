@@ -1,0 +1,37 @@
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col fixed h-full md:relative z-10">
+        <div class="p-6 text-2xl font-bold text-blue-500 flex items-center gap-2">
+            <span>SimpleISP</span>
+        </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <button @click="currentTab = 'dashboard'"
+                :class="currentTab === 'dashboard' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Monitor en Vivo</button>
+            <button @click="currentTab = 'clients'"
+                :class="currentTab === 'clients' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Clientes</button>
+            <button @click="currentTab = 'routers'"
+                :class="currentTab === 'routers' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Routers</button>
+            <button @click="currentTab = 'payments'"
+                :class="currentTab === 'payments' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Pagos</button>
+            <button @click="currentTab = 'settings'"
+                :class="currentTab === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Configuración</button>
+            <button @click="currentTab = 'users'"
+                :class="currentTab === 'users' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'"
+                class="w-full text-left px-4 py-2 rounded-lg transition font-medium">Usuarios</button>
+        </nav>
+        <div class="p-4 border-t border-slate-800 space-y-2">
+            <div class="text-xs text-slate-400 truncate" title="{{ user.email }}">
+                👤 {{ user.email }}
+                {% if user.is_superuser %}
+                <span class="text-yellow-500 font-bold">(Admin)</span>
+                {% endif %}
+            </div>
+            <button @click="logout()"
+                class="w-full bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold transition">
+                Cerrar Sesión
+            </button>
+        </div>
+    </aside>

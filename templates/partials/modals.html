@@ -1,0 +1,87 @@
+    <div x-show="showAddClientModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+        x-cloak>
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl"
+            @click.away="showAddClientModal = false">
+            <h3 class="text-2xl font-bold mb-4 text-white">Cliente</h3>
+            <form @submit.prevent="saveClient" class="space-y-4">
+                <input type="text" x-model="newClient.name" placeholder="Nombre"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <input type="text" x-model="newClient.ip_address" placeholder="IP"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" x-model="newClient.limit_max_upload" placeholder="Subida (5M)"
+                        class="bg-slate-800 border border-slate-700 rounded p-2 text-white">
+                    <input type="text" x-model="newClient.limit_max_download" placeholder="Bajada (10M)"
+                        class="bg-slate-800 border border-slate-700 rounded p-2 text-white">
+                </div>
+                <input type="number" x-model="newClient.billing_day" placeholder="Día corte"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" @click="showAddClientModal = false" class="text-slate-400">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal Crear Usuario -->
+    <div x-show="showCreateUserModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" x-cloak>
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-2xl font-bold mb-4 text-white">Crear Usuario</h3>
+            <form @submit.prevent="createUser" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Email</label>
+                    <input type="email" x-model="newUser.email" placeholder="usuario@example.com"
+                        class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Contraseña</label>
+                    <input type="password" x-model="newUser.password" placeholder="••••••••"
+                        class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="is_superuser" x-model="newUser.is_superuser" class="w-4 h-4">
+                    <label for="is_superuser" class="text-sm text-slate-400">Es Administrador</label>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" @click="showCreateUserModal = false" class="text-slate-400">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Router -->
+    <div x-show="showAddRouterModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+        x-cloak>
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl"
+            @click.away="showAddRouterModal = false">
+            <h3 class="text-2xl font-bold mb-4 text-white" x-text="isEditing ? 'Editar Router' : 'Nuevo Router'"></h3>
+            <form @submit.prevent="saveRouter" class="space-y-4">
+                <input type="text" x-model="newRouter.name" placeholder="Nombre (ej. Principal)"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <input type="text" x-model="newRouter.ip_address" placeholder="Dirección IP"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <div class="grid grid-cols-2 gap-2">
+                     <input type="text" x-model="newRouter.username" placeholder="Usuario Mikrotik"
+                        class="bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                     <input type="number" x-model.number="newRouter.port" placeholder="Puerto API (8728)"
+                        class="bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                </div>
+                <input type="password" x-model="newRouter.password" placeholder="Contraseña API"
+                    class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
+                <p class="text-xs text-slate-500" x-show="isEditing">Dejar en blanco para mantener la actual.</p>
+                
+                 <div class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="router_active" x-model="newRouter.is_active" class="w-4 h-4">
+                    <label for="router_active" class="text-sm text-slate-400">Router Activo</label>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" @click="showAddRouterModal = false" class="text-slate-400">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
