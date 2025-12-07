@@ -59,9 +59,11 @@ async def create_client(
             await asyncio.to_thread(sync_client_mikrotik, client, False, settings, router_db)
         
         return client
-    except IntegrityError:
+    except IntegrityError as e:
         await session.rollback()
-        raise HTTPException(status_code=400, detail="Error: La dirección IP ya está registrada.")
+        if "unique" in str(e).lower() and "ip_address" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Error: La dirección IP ya está registrada.")
+        raise HTTPException(status_code=400, detail="Error de integridad: Verifique los datos (IP duplicada o Router inválido).")
     except Exception as e:
         logger.error(f"Error creando cliente: {e}")
         raise HTTPException(status_code=500, detail=str(e))

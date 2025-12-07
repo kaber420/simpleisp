@@ -1,34 +1,99 @@
-        <div x-show="currentTab === 'routers'" x-cloak>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-white">Gestión de Routers</h2>
-                <button @click="openCreateRouterModal()"
-                    class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg transition">
-                    + Nuevo Router
-                </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <template x-for="router in routers" :key="router.id">
-                    <div class="card p-6 border-l-4 shadow-lg transition hover:-translate-y-1"
-                        :class="router.is_active ? 'border-green-500' : 'border-red-500'">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xl font-bold text-white truncate" x-text="router.name"></h3>
-                            <span class="text-xs uppercase font-bold px-2 py-1 rounded border"
-                                :class="router.is_active ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'"
-                                x-text="router.is_active ? 'Activo' : 'Inactivo'"></span>
-                        </div>
-                        <p class="text-slate-400 font-mono text-sm mb-1">IP: <span x-text="router.ip_address"></span></p>
-                        <p class="text-slate-400 font-mono text-sm mb-3">Usuario: <span x-text="router.username"></span></p>
+<div x-show="currentTab === 'routers'" x-cloak
+    x-init="$watch('currentTab', val => val === 'routers' ? startStatsPolling() : stopStatsPolling())">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-white">Gestión de Routers</h2>
+        <button @click="openCreateRouterModal()"
+            class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg transition">
+            + Nuevo Router
+        </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <template x-for="router in routers" :key="router.id">
+            <div class="card p-5 border-l-4 shadow-lg transition hover:-translate-y-1"
+                :class="router.is_active ? 'border-green-500' : 'border-red-500'">
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="text-xl font-bold text-white truncate" x-text="router.name"></h3>
+                        <p class="text-slate-400 font-mono text-xs" x-text="router.ip_address"></p>
+                    </div>
+                    <span class="text-xs uppercase font-bold px-2 py-1 rounded border"
+                        :class="routerStats[router.id]?.online === true ? 'bg-green-500/10 text-green-400 border-green-500/20' : (routerStats[router.id]?.online === false ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20')"
+                        x-text="routerStats[router.id]?.loading ? 'Cargando...' : (routerStats[router.id]?.online ? 'Online' : 'Offline')"></span>
+                </div>
 
-                        <div class="flex justify-between items-center text-sm border-t border-slate-700 pt-3 mt-auto">
-                            <span class="text-slate-500">Puerto API: <span class="text-slate-300" x-text="router.port"></span></span>
-                            <div class="flex gap-3">
-                                <button @click="openEditRouterModal(router)"
-                                    class="text-blue-400 hover:underline">Editar</button>
-                                <button @click="deleteRouter(router.id)"
-                                    class="text-red-400 hover:underline">Eliminar</button>
+                <!-- Stats Section (only show when online) -->
+                <template x-if="routerStats[router.id]?.online">
+                    <div class="space-y-3 mb-4">
+                        <!-- Model & Uptime -->
+                        <div class="flex justify-between text-xs text-slate-400 border-b border-slate-700 pb-2">
+                            <span x-text="routerStats[router.id]?.board || 'N/A'"></span>
+                            <span>Uptime: <span class="text-slate-300"
+                                    x-text="routerStats[router.id]?.uptime || 'N/A'"></span></span>
+                        </div>
+
+                        <!-- CPU -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">CPU</span>
+                                <span class="text-white font-semibold"
+                                    x-text="(routerStats[router.id]?.cpu_load || 0) + '%'"></span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-300"
+                                    :class="routerStats[router.id]?.cpu_load > 80 ? 'bg-red-500' : (routerStats[router.id]?.cpu_load > 50 ? 'bg-yellow-500' : 'bg-blue-500')"
+                                    :style="'width: ' + (routerStats[router.id]?.cpu_load || 0) + '%'"></div>
+                            </div>
+                        </div>
+
+                        <!-- RAM -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">RAM</span>
+                                <span class="text-white font-semibold"
+                                    x-text="(routerStats[router.id]?.ram_usage || 0) + '%'"></span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-300"
+                                    :class="routerStats[router.id]?.ram_usage > 80 ? 'bg-red-500' : (routerStats[router.id]?.ram_usage > 50 ? 'bg-yellow-500' : 'bg-purple-500')"
+                                    :style="'width: ' + (routerStats[router.id]?.ram_usage || 0) + '%'"></div>
+                            </div>
+                        </div>
+
+                        <!-- HDD -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">HDD</span>
+                                <span class="text-white font-semibold"
+                                    x-text="(routerStats[router.id]?.hdd_usage || 0) + '%'"></span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-300"
+                                    :class="routerStats[router.id]?.hdd_usage > 80 ? 'bg-red-500' : (routerStats[router.id]?.hdd_usage > 50 ? 'bg-yellow-500' : 'bg-emerald-500')"
+                                    :style="'width: ' + (routerStats[router.id]?.hdd_usage || 0) + '%'"></div>
                             </div>
                         </div>
                     </div>
                 </template>
+
+                <!-- Offline Message -->
+                <template x-if="routerStats[router.id]?.online === false">
+                    <div class="text-center py-4 text-red-400 text-sm">
+                        <span>⚠ No se puede conectar</span>
+                    </div>
+                </template>
+
+                <!-- Footer Actions -->
+                <div class="flex justify-between items-center text-sm border-t border-slate-700 pt-3 mt-auto">
+                    <span class="text-slate-500">Puerto: <span class="text-slate-300"
+                            x-text="router.port"></span></span>
+                    <div class="flex gap-3">
+                        <button @click="openEditRouterModal(router)"
+                            class="text-blue-400 hover:underline">Editar</button>
+                        <button @click="deleteRouter(router.id)" class="text-red-400 hover:underline">Eliminar</button>
+                    </div>
+                </div>
             </div>
-        </div>
+        </template>
+    </div>
+</div>

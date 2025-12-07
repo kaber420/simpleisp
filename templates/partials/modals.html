@@ -8,6 +8,15 @@
                     class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
                 <input type="text" x-model="newClient.ip_address" placeholder="IP"
                     class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" required>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Router</label>
+                    <select x-model.number="newClient.router_id" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
+                        <option value="">-- Seleccionar Router (Auto) --</option>
+                        <template x-for="router in routers" :key="router.id">
+                            <option :value="router.id" x-text="router.name" :selected="newClient.router_id == router.id"></option>
+                        </template>
+                    </select>
+                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <input type="text" x-model="newClient.limit_max_upload" placeholder="Subida (5M)"
                         class="bg-slate-800 border border-slate-700 rounded p-2 text-white">

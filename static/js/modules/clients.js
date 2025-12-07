@@ -10,7 +10,7 @@ export const clientsModule = {
 
     openCreateModal() {
         this.isEditing = false;
-        this.newClient = { name: '', ip_address: '', limit_max_upload: '5M', limit_max_download: '10M', billing_day: 1 };
+        this.newClient = { name: '', ip_address: '', limit_max_upload: '5M', limit_max_download: '10M', billing_day: 1, router_id: null };
         this.showAddClientModal = true;
     },
 
