@@ -25,44 +25,43 @@ async def websocket_traffic(websocket: WebSocket):
     # Función para obtener datos en un hilo separado para no bloquear
     def fetch_mikrotik_data(router_obj):
         try:
-            # Get persistent connection
-            api = manager.get_connection(router_obj)
-            
-            # 1. Obtener Tráfico de Colas
-            queues = api.get_resource('/queue/simple').get()
-            traffic_map = {}
-            
-            for q in queues:
-                rx_bytes = 0
-                tx_bytes = 0
-                if 'bytes' in q:
-                    parts = q['bytes'].split('/')
-                    if len(parts) == 2:
-                        tx_bytes = int(parts[0]) 
-                        rx_bytes = int(parts[1])
+            # Usar conexión con bloqueo thread-safe
+            with manager.get_locked_connection(router_obj) as api:
+                # 1. Obtener Tráfico de Colas
+                queues = api.get_resource('/queue/simple').get()
+                traffic_map = {}
                 
-                target_ip = q.get('target', '').split('/')[0]
-                traffic_map[target_ip] = {
-                    "upload": tx_bytes,
-                    "download": rx_bytes
-                }
+                for q in queues:
+                    rx_bytes = 0
+                    tx_bytes = 0
+                    if 'bytes' in q:
+                        parts = q['bytes'].split('/')
+                        if len(parts) == 2:
+                            tx_bytes = int(parts[0]) 
+                            rx_bytes = int(parts[1])
+                    
+                    target_ip = q.get('target', '').split('/')[0]
+                    traffic_map[target_ip] = {
+                        "upload": tx_bytes,
+                        "download": rx_bytes
+                    }
 
-            # 2. Obtener Recursos
-            resource = api.get_resource('/system/resource').get()
-            system_stats = {}
-            if resource:
-                res = resource[0]
-                total_mem = int(res.get('total-memory', 1))
-                free_mem = int(res.get('free-memory', 0))
-                used_mem_perc = ((total_mem - free_mem) / total_mem) * 100
-                
-                system_stats = {
-                    "cpu_load": res.get('cpu-load', '0'),
-                    "uptime": res.get('uptime', ''),
-                    "version": res.get('version', ''),
-                    "board": res.get('board-name', ''),
-                    "ram_usage": round(used_mem_perc, 1)
-                }
+                # 2. Obtener Recursos
+                resource = api.get_resource('/system/resource').get()
+                system_stats = {}
+                if resource:
+                    res = resource[0]
+                    total_mem = int(res.get('total-memory', 1))
+                    free_mem = int(res.get('free-memory', 0))
+                    used_mem_perc = ((total_mem - free_mem) / total_mem) * 100
+                    
+                    system_stats = {
+                        "cpu_load": res.get('cpu-load', '0'),
+                        "uptime": res.get('uptime', ''),
+                        "version": res.get('version', ''),
+                        "board": res.get('board-name', ''),
+                        "ram_usage": round(used_mem_perc, 1)
+                    }
 
             return {
                 "queues": traffic_map,
@@ -72,7 +71,6 @@ async def websocket_traffic(websocket: WebSocket):
         except Exception as e:
             logger.error(f"Error leyendo Mikrotik: {e}")
             return {"queues": {}, "system": {}}
-        # No disconnect!
 
     try:
         while True:
