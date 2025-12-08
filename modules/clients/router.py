@@ -3,14 +3,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+from typing import List, Dict, Any
+from collections import defaultdict
 
 from database import get_session
 from modules.auth.config import current_active_user
 from modules.auth.models import User
 from utils.logging import logger
 from modules.clients.models import Client
+from modules.clients.schemas import ClientWithStats
 from modules.routers.models import Router
-from modules.clients.service import sync_client_mikrotik, remove_client_mikrotik
+from modules.clients.service import sync_client_mikrotik, remove_client_mikrotik, get_router_queue_stats
 from modules.settings.service import get_system_settings
 
 router = APIRouter(prefix="/api/clients", tags=["clients"])
@@ -21,13 +25,62 @@ async def get_client_router(session: AsyncSession, client: Client):
     res = await session.execute(select(Router))
     return res.scalars().first()
 
-@router.get("")
+@router.get("", response_model=List[ClientWithStats])
 async def get_clients(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(current_active_user)
 ):
-    result = await session.execute(select(Client))
-    return result.scalars().all()
+    # Fetch all clients with their routers eager-loaded
+    result = await session.execute(
+        select(Client).options(selectinload(Client.router))
+    )
+    clients = result.scalars().all()
+    
+    # Group clients by router_id
+    clients_by_router: Dict[int, List[Client]] = defaultdict(list)
+    routers_map: Dict[int, Router] = {}
+    
+    for client in clients:
+        if client.router_id:
+            clients_by_router[client.router_id].append(client)
+            if client.router and client.router_id not in routers_map:
+                routers_map[client.router_id] = client.router
+    
+    # Fetch stats from each router
+    router_stats: Dict[int, Dict[str, Any]] = {}
+    for router_id, router_db in routers_map.items():
+        stats = await asyncio.to_thread(get_router_queue_stats, router_db)
+        router_stats[router_id] = stats
+    
+    # Build response with stats
+    clients_with_stats = []
+    for client in clients:
+        stats = {}
+        router_name = None
+        
+        if client.router_id and client.router_id in router_stats:
+            stats = router_stats[client.router_id].get(client.ip_address, {})
+            if client.router:
+                router_name = client.router.name
+        
+        clients_with_stats.append(ClientWithStats(
+            id=client.id,
+            name=client.name,
+            ip_address=client.ip_address,
+            limit_max_upload=client.limit_max_upload,
+            limit_max_download=client.limit_max_download,
+            billing_day=client.billing_day,
+            status=client.status,
+            created_at=client.created_at,
+            router_id=client.router_id,
+            router_name=router_name,
+            total_upload=stats.get('total_upload', '0 B'),
+            total_download=stats.get('total_download', '0 B'),
+            current_upload_speed=stats.get('current_upload_speed', '0 bps'),
+            current_download_speed=stats.get('current_download_speed', '0 bps'),
+        ))
+    
+    return clients_with_stats
 
 @router.post("")
 async def create_client(

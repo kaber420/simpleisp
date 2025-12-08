@@ -1,7 +1,62 @@
+from typing import Dict, Any
 from utils.logging import logger
 from modules.clients.models import Client
 from modules.routers.models import Router
 from modules.routers.connection_manager import manager
+
+def format_bytes(bytes_str: str) -> str:
+    """Converts bytes string to human readable format."""
+    try:
+        bytes_val = int(bytes_str)
+    except (ValueError, TypeError):
+        return "0 B"
+    
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if bytes_val < 1024:
+            return f"{bytes_val:.1f} {unit}"
+        bytes_val /= 1024
+    return f"{bytes_val:.1f} PB"
+
+def format_rate(rate_str: str) -> str:
+    """Converts rate string to human readable format (bps)."""
+    try:
+        rate_val = int(rate_str)
+    except (ValueError, TypeError):
+        return "0 bps"
+    
+    for unit in ['bps', 'Kbps', 'Mbps', 'Gbps']:
+        if rate_val < 1000:
+            return f"{rate_val:.1f} {unit}"
+        rate_val /= 1000
+    return f"{rate_val:.1f} Tbps"
+
+def get_router_queue_stats(router_db: Router) -> Dict[str, Dict[str, Any]]:
+    """
+    Fetches queue statistics from MikroTik router.
+    Returns a dict mapping target IP -> stats dict.
+    """
+    stats = {}
+    try:
+        with manager.get_locked_connection(router_db) as api:
+            queue_res = api.get_resource('/queue/simple')
+            queues = queue_res.get()
+            
+            for q in queues:
+                target = q.get('target', '')
+                # Remove /32 suffix if present
+                if target.endswith('/32'):
+                    target = target[:-3]
+                
+                stats[target] = {
+                    'total_upload': format_bytes(q.get('bytes', '0/0').split('/')[0]),
+                    'total_download': format_bytes(q.get('bytes', '0/0').split('/')[-1]),
+                    'current_upload_speed': format_rate(q.get('rate', '0/0').split('/')[0]),
+                    'current_download_speed': format_rate(q.get('rate', '0/0').split('/')[-1]),
+                }
+    except Exception as e:
+        logger.warning(f"Error fetching queue stats from router {router_db.name}: {e}")
+    
+    return stats
 
 def sync_client_mikrotik(client: Client, suspend: bool, settings: dict, router_db: Router):
     """
