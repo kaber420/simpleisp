@@ -1,9 +1,8 @@
 from typing import Optional
 from sqlmodel import Field, SQLModel
-from fastapi_users.db import SQLAlchemyBaseUserTable
 
 
-class User(SQLModel, SQLAlchemyBaseUserTable[int], table=True):
+class User(SQLModel, table=True):
     """
     Modelo de Usuario compatible con FastAPI Users y SQLModel.
     
@@ -16,8 +15,9 @@ class User(SQLModel, SQLAlchemyBaseUserTable[int], table=True):
     - is_verified: Email verificado (para futuras expansiones)
     """
     id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(unique=True, index=True, max_length=255)
-    hashed_password: str
-    is_active: bool = True
-    is_superuser: bool = False
-    is_verified: bool = False
+    email: str = Field(unique=True, index=True, max_length=320)
+    hashed_password: str = Field(max_length=1024)
+    is_active: bool = Field(default=True)
+    is_superuser: bool = Field(default=False)
+    is_verified: bool = Field(default=False)
+
