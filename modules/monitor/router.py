@@ -73,6 +73,8 @@ async def websocket_traffic(websocket: WebSocket):
 
         except Exception as e:
             logger.error(f"Error leyendo Mikrotik: {e}")
+            # Invalidate the broken connection so the next attempt creates a fresh one
+            manager.disconnect(router_obj.id)
             return {"queues": {}, "system": {}}
 
     try:
