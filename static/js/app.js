@@ -3,6 +3,7 @@ import { routersModule } from './modules/routers.js';
 import { paymentsModule } from './modules/payments.js';
 import { usersModule } from './modules/users.js';
 import { settingsModule } from './modules/settings.js';
+import { dashboardModule } from './modules/dashboard.js';
 
 window.appData = function () {
     return {
@@ -17,11 +18,13 @@ window.appData = function () {
         ...paymentsModule,
         ...usersModule,
         ...settingsModule,
+        ...dashboardModule,
 
         init() {
             this.loadClients();
             this.loadRouters();
             this.loadSettings();
+            this.loadDashboardSummary();
             this.connectWebSocket();
         },
 

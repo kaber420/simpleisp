@@ -1,28 +1,135 @@
-        <div x-show="currentTab === 'dashboard'" x-cloak>
-            <h2 class="text-3xl font-bold mb-6 text-white">Estado del Servidor</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="card p-6 flex items-center gap-4">
-                    <div class="p-3 rounded-full bg-blue-500/20 text-blue-400">CPU</div>
-                    <div>
-                        <p class="text-slate-400 text-sm">Uso de CPU</p>
-                        <p class="text-2xl font-bold text-white" x-text="systemStats.cpu_load + '%'"></p>
-                    </div>
+<div x-show="currentTab === 'dashboard'" x-cloak>
+    <h2 class="text-3xl font-bold mb-6 text-white">Panel de Control</h2>
+
+    <!-- Router Status Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Routers Online Card -->
+        <div class="card p-6 flex items-center gap-4">
+            <div class="p-4 rounded-full bg-green-500/20">
+                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">Routers Online</p>
+                <p class="text-3xl font-bold text-green-400" x-text="dashboardData.routers.online"></p>
+            </div>
+        </div>
+
+        <!-- Routers Offline Card -->
+        <div class="card p-6 flex items-center gap-4">
+            <div class="p-4 rounded-full bg-red-500/20">
+                <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">Routers Offline</p>
+                <p class="text-3xl font-bold text-red-400" x-text="dashboardData.routers.offline"></p>
+            </div>
+        </div>
+
+        <!-- Clients Active Card -->
+        <div class="card p-6 flex items-center gap-4">
+            <div class="p-4 rounded-full bg-blue-500/20">
+                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">Clientes Activos</p>
+                <p class="text-3xl font-bold text-blue-400" x-text="dashboardData.clients.active"></p>
+            </div>
+        </div>
+
+        <!-- Clients Suspended Card -->
+        <div class="card p-6 flex items-center gap-4">
+            <div class="p-4 rounded-full bg-amber-500/20">
+                <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">Clientes Suspendidos</p>
+                <p class="text-3xl font-bold text-amber-400" x-text="dashboardData.clients.suspended"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row: Offline Routers List + Clients Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Offline Routers List -->
+        <div class="card p-6">
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Routers Caídos
+            </h3>
+
+            <template x-if="dashboardData.routers.offline_list.length === 0">
+                <div class="flex items-center justify-center py-8 text-slate-500">
+                    <svg class="w-6 h-6 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-green-400">Todos los routers están en línea</span>
                 </div>
-                <div class="card p-6 flex items-center gap-4">
-                    <div class="p-3 rounded-full bg-purple-500/20 text-purple-400">RAM</div>
-                    <div>
-                        <p class="text-slate-400 text-sm">Uso de RAM</p>
-                        <p class="text-2xl font-bold text-white" x-text="systemStats.ram_usage + '%'"></p>
-                    </div>
+            </template>
+
+            <template x-if="dashboardData.routers.offline_list.length > 0">
+                <div class="space-y-3 max-h-64 overflow-y-auto">
+                    <template x-for="router in dashboardData.routers.offline_list" :key="router.id">
+                        <div
+                            class="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                                <div>
+                                    <p class="font-medium text-white" x-text="router.name"></p>
+                                    <p class="text-sm text-slate-400" x-text="router.ip_address"></p>
+                                </div>
+                            </div>
+                            <span class="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">OFFLINE</span>
+                        </div>
+                    </template>
                 </div>
-                <div class="card p-6 col-span-1 md:col-span-2">
-                    <h3 class="text-lg font-bold text-white mb-2">Información del Router</h3>
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><span class="text-slate-500">Modelo:</span> <span class="text-slate-300"
-                                x-text="systemStats.board"></span></div>
-                        <div><span class="text-slate-500">Uptime:</span> <span class="text-slate-300"
-                                x-text="systemStats.uptime"></span></div>
-                    </div>
+            </template>
+        </div>
+
+        <!-- Clients Donut Chart -->
+        <div class="card p-6">
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                </svg>
+                Estado de Clientes
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="clientsChart"></canvas>
+            </div>
+            <div class="mt-4 flex justify-center gap-6 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400">Activos: <span class="text-white font-medium"
+                            x-text="dashboardData.clients.active"></span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span class="text-slate-400">Suspendidos: <span class="text-white font-medium"
+                            x-text="dashboardData.clients.suspended"></span></span>
                 </div>
             </div>
         </div>
+    </div>
+</div>

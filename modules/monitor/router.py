@@ -1,10 +1,13 @@
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from utils.logging import logger
 from modules.routers.connection_manager import manager
 from modules.routers.models import Router
-from database import async_session_maker
+from database import async_session_maker, get_session
 from sqlmodel import select
+from modules.auth.config import current_active_user
+from modules.monitor.dashboard_service import get_dashboard_summary
 
 router = APIRouter(tags=["monitor"])
 
@@ -81,3 +84,13 @@ async def websocket_traffic(websocket: WebSocket):
         logger.info("Cliente WebSocket desconectado") 
     except Exception as e:
         logger.error(f"WS Error: {e}")
+
+
+@router.get("/api/dashboard/summary", dependencies=[Depends(current_active_user)])
+async def dashboard_summary(session: AsyncSession = Depends(get_session)):
+    """
+    Returns aggregated dashboard statistics:
+    - Routers: online/offline counts and list of offline routers
+    - Clients: active/suspended counts
+    """
+    return await get_dashboard_summary(session)
