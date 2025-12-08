@@ -2,6 +2,28 @@ export const paymentsModule = {
     newPayment: { client_id: '', month_paid: '', amount: 0 },
     paymentHistory: [],
     paymentMonths: [],
+    paymentSearchQuery: '',
+    isPaymentDropdownOpen: false,
+
+    getFilteredPaymentClients() {
+        if (!this.paymentSearchQuery) return this.clients;
+        const query = this.paymentSearchQuery.toLowerCase();
+        return this.clients.filter(c => c.name.toLowerCase().includes(query));
+    },
+
+    selectPaymentClient(client) {
+        this.newPayment.client_id = client.id;
+        this.paymentSearchQuery = client.name;
+        this.isPaymentDropdownOpen = false;
+        this.loadPaymentMonths(client.id);
+    },
+
+    clearPaymentClient() {
+        this.newPayment.client_id = '';
+        this.paymentSearchQuery = '';
+        this.paymentHistory = [];
+        this.paymentMonths = [];
+    },
 
     async submitPayment() {
         if (!this.newPayment.month_paid) {
