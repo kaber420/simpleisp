@@ -9,5 +9,18 @@ export const settingsModule = {
     async saveSettings() {
         await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.settings) });
         alert("Configuración guardada");
+    },
+
+    async runSuspensions() {
+        if (!confirm("¿Estás seguro de ejecutar el proceso de cortes? Esto suspenderá a los clientes con pagos vencidos.")) return;
+
+        try {
+            const res = await fetch('/api/payments/run-suspensions', { method: 'POST' });
+            const data = await res.json();
+            alert(data.detail + (data.processed ? ` (${data.processed} cambios)` : ""));
+        } catch (e) {
+            console.error(e);
+            alert("Error al ejecutar suspensiones");
+        }
     }
 };

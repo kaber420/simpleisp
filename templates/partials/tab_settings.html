@@ -1,61 +1,81 @@
-        <div x-show="currentTab === 'settings'" x-cloak>
-            <h2 class="text-3xl font-bold mb-6 text-white">Configuración del Sistema</h2>
-            <div class="card p-6 max-w-2xl">
-                <h3 class="text-xl font-bold mb-4 text-white border-b border-slate-700 pb-2">Parámetros de Corte y Red
-                </h3>
-                <form @submit.prevent="saveSettings" class="space-y-6">
+<div x-show="currentTab === 'settings'" x-cloak>
+    <h2 class="text-3xl font-bold mb-6 text-white">Configuración del Sistema</h2>
+    <div class="card p-6 max-w-2xl">
+        <h3 class="text-xl font-bold mb-4 text-white border-b border-slate-700 pb-2">Parámetros de Corte y Red
+        </h3>
+        <form @submit.prevent="saveSettings" class="space-y-6">
 
-                    <div>
-                        <label class="block text-sm text-yellow-400 font-bold mb-1">Días de Gracia para
-                            Suspensión</label>
-                        <input type="number" min="0" max="30" x-model="settings.grace_days"
-                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none">
-                        <p class="text-xs text-slate-500 mt-1">
-                            Días adicionales después del día de corte antes de suspender. <br>
-                            <span class="text-yellow-500">Ejemplo:</span> Con día de corte = 1 y gracia = 3, se suspende
-                            el día 4.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm text-blue-400 font-bold mb-1">Método de Suspensión</label>
-                        <select x-model="settings.suspension_method"
-                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="queue">Solo Cola (Bajar Velocidad)</option>
-                            <option value="address_list">Address List (Para NAT/Bloqueo)</option>
-                            <option value="both">Ambos (Cola Baja + Address List)</option>
-                        </select>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Define cómo se comporta el sistema al suspender un cliente.
-                        </p>
-                    </div>
-
-                    <div x-show="settings.suspension_method === 'queue' || settings.suspension_method === 'both'"
-                        class="pl-4 border-l-2 border-blue-500/30">
-                        <label class="block text-sm text-slate-400 mb-1">Velocidad de Corte (Queue)</label>
-                        <input type="text" x-model="settings.suspension_speed"
-                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none">
-                        <p class="text-xs text-slate-500 mt-1">Formato: Subida/Bajada (ej. 1k/1k)</p>
-                    </div>
-
-                    <div x-show="settings.suspension_method === 'address_list' || settings.suspension_method === 'both'"
-                        class="pl-4 border-l-2 border-green-500/30">
-                        <label class="block text-sm text-slate-400 mb-1">Nombre de Address List</label>
-                        <input type="text" x-model="settings.address_list_name"
-                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none">
-                        <p class="text-xs text-slate-500 mt-1">
-                            El sistema agregará IPs activas aquí. <br>
-                            <span class="text-yellow-500">Nota:</span> Configura tu regla de NAT en Mikrotik: <br>
-                            <code>chain=srcnat action=masquerade src-address-list=<span x-text="settings.address_list_name"></span></code>
-                        </p>
-                    </div>
-
-                    <div class="pt-4">
-                        <button type="submit"
-                            class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition">
-                            Guardar Configuración
-                        </button>
-                    </div>
-                </form>
+            <div>
+                <label class="block text-sm text-yellow-400 font-bold mb-1">Días de Gracia para
+                    Suspensión</label>
+                <input type="number" min="0" max="30" x-model="settings.grace_days"
+                    class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none">
+                <p class="text-xs text-slate-500 mt-1">
+                    Días adicionales después del día de corte antes de suspender. <br>
+                    <span class="text-yellow-500">Ejemplo:</span> Con día de corte = 1 y gracia = 3, se suspende
+                    el día 4.
+                </p>
             </div>
+
+            <div>
+                <label class="block text-sm text-blue-400 font-bold mb-1">Método de Suspensión</label>
+                <select x-model="settings.suspension_method"
+                    class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="queue">Solo Cola (Bajar Velocidad)</option>
+                    <option value="address_list">Address List (Para NAT/Bloqueo)</option>
+                    <option value="both">Ambos (Cola Baja + Address List)</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">
+                    Define cómo se comporta el sistema al suspender un cliente.
+                </p>
+            </div>
+
+            <div x-show="settings.suspension_method === 'queue' || settings.suspension_method === 'both'"
+                class="pl-4 border-l-2 border-blue-500/30">
+                <label class="block text-sm text-slate-400 mb-1">Velocidad de Corte (Queue)</label>
+                <input type="text" x-model="settings.suspension_speed"
+                    class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none">
+                <p class="text-xs text-slate-500 mt-1">Formato: Subida/Bajada (ej. 1k/1k)</p>
+            </div>
+
+            <div x-show="settings.suspension_method === 'address_list' || settings.suspension_method === 'both'"
+                class="pl-4 border-l-2 border-green-500/30">
+                <label class="block text-sm text-slate-400 mb-1">Nombre de Address List</label>
+                <input type="text" x-model="settings.address_list_name"
+                    class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none">
+                <p class="text-xs text-slate-500 mt-1">
+                    El sistema agregará IPs activas aquí. <br>
+                    <span class="text-yellow-500">Nota:</span> Configura tu regla de NAT en Mikrotik: <br>
+                    <code>chain=srcnat action=masquerade src-address-list=<span x-text="settings.address_list_name"></span></code>
+                </p>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition">
+                    Guardar Configuración
+                </button>
+            </div>
+        </form>
+        </form>
+    </div>
+
+    <!-- Panel de Mantenimiento / Acciones Manuales -->
+    <div class="card p-6 max-w-2xl mt-8">
+        <h3 class="text-xl font-bold mb-4 text-white border-b border-slate-700 pb-2">Acciones Manuales</h3>
+
+        <div class="flex items-center justify-between">
+            <div>
+                <h4 class="text-white font-bold">Ejecutar Cortes y Suspensiones</h4>
+                <p class="text-sm text-slate-400">
+                    Fuerza la revisión de todos los clientes y suspende a los morosos inmediatamente.<br>
+                    <span class="text-xs text-yellow-500">Nota:</span> Esto ya se ejecuta automáticamente cada hora.
+                </p>
+            </div>
+            <button @click="runSuspensions"
+                class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded shadow transition flex items-center gap-2">
+                <i class="fas fa-bolt"></i> Ejecutar Ahora
+            </button>
         </div>
+    </div>
+</div>

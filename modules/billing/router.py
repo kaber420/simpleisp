@@ -13,8 +13,17 @@ from modules.clients.models import Client
 from modules.clients.service import sync_client_mikrotik
 # Importamos get_system_settings para pasar la configuración completa
 from modules.settings.service import get_system_settings
+from modules.billing.service import process_suspensions
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
+
+@router.post("/run-suspensions")
+async def run_suspensions(
+    user: User = Depends(current_active_user)
+):
+    """Ejecuta el proceso de cortes y suspensiones manualmente."""
+    return await process_suspensions()
+
 
 @router.get("/{client_id}")
 async def get_payments(
