@@ -1,0 +1,31 @@
+{
+  "name": "simpleisp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/tailwind.css",
+    "watch:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/tailwind.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaber420/simpleisp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kaber420/simpleisp/issues"
+  },
+  "homepage": "https://github.com/kaber420/simpleisp#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "tailwindcss": "^4.1.17"
+  },
+  "dependencies": {
+    "alpinejs": "^3.15.2",
+    "chart.js": "^4.5.1"
+  }
+}
