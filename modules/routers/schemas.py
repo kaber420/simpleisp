@@ -7,6 +7,7 @@ class RouterBase(BaseModel):
     username: str
     port: int = 8728
     is_active: bool = True
+    wan_interface: Optional[str] = None
 
 class RouterCreate(RouterBase):
     password: str
@@ -18,6 +19,7 @@ class RouterUpdate(BaseModel):
     password: Optional[str] = None
     port: Optional[int] = None
     is_active: Optional[bool] = None
+    wan_interface: Optional[str] = None
 
 class RouterRead(RouterBase):
     id: int

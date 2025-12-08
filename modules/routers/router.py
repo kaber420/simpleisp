@@ -9,7 +9,7 @@ from modules.auth.dependencies import get_current_admin_user
 from modules.auth.models import User
 from modules.routers.schemas import RouterCreate, RouterRead, RouterUpdate
 from modules.routers.service import router_service
-from modules.routers.utils import fetch_router_stats
+from modules.routers.utils import fetch_router_stats, fetch_router_interfaces
 
 router = APIRouter(prefix="/api/routers", tags=["routers"])
 
@@ -42,6 +42,20 @@ async def get_router_stats(
     # Run the blocking API call in a thread pool
     stats = await asyncio.to_thread(fetch_router_stats, router_item)
     return stats
+
+@router.get("/{router_id}/interfaces", dependencies=[Depends(current_active_user)])
+async def get_router_interfaces(
+    router_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """Fetches the list of interfaces from a specific router for dropdown selection."""
+    router_item = await router_service.get_by_id(session, router_id)
+    if not router_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Router not found")
+    
+    # Run the blocking API call in a thread pool
+    interfaces = await asyncio.to_thread(fetch_router_interfaces, router_item)
+    return interfaces
 
 @router.post("", response_model=RouterRead, dependencies=[Depends(get_current_admin_user)])
 async def create_router(

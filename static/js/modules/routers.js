@@ -1,9 +1,23 @@
 export const routersModule = {
     routers: [],
     routerStats: {},  // Map of router_id -> stats object
+    routerInterfaces: [],  // List of interfaces for the current router being edited
+    loadingInterfaces: false,
     statsPollingInterval: null,
     showAddRouterModal: false,
-    newRouter: { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true },
+    newRouter: { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '' },
+
+    formatBytes(bytes, decimals = 1) {
+        if (!bytes || bytes === '0 B') return bytes || '0 B';
+        // If already formatted (contains unit), return as-is
+        if (typeof bytes === 'string' && /[KMGTP]?B$/.test(bytes)) return bytes;
+
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    },
 
     async loadRouters() {
         const res = await fetch('/api/routers');
@@ -16,6 +30,20 @@ export const routersModule = {
                 }
             });
         }
+    },
+
+    async loadRouterInterfaces(routerId) {
+        this.loadingInterfaces = true;
+        this.routerInterfaces = [];
+        try {
+            const res = await fetch(`/api/routers/${routerId}/interfaces`);
+            if (res.ok) {
+                this.routerInterfaces = await res.json();
+            }
+        } catch (e) {
+            console.error('Error loading interfaces:', e);
+        }
+        this.loadingInterfaces = false;
     },
 
     async fetchRouterStats(routerId) {
@@ -56,15 +84,18 @@ export const routersModule = {
 
     openCreateRouterModal() {
         this.isEditing = false;
-        this.newRouter = { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true };
+        this.routerInterfaces = [];
+        this.newRouter = { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '' };
         this.showAddRouterModal = true;
     },
 
     openEditRouterModal(router) {
         this.isEditing = true;
         this.editingId = router.id;
-        this.newRouter = { ...router, password: '' };
+        this.newRouter = { ...router, password: '', wan_interface: router.wan_interface || '' };
         this.showAddRouterModal = true;
+        // Load interfaces for this router
+        this.loadRouterInterfaces(router.id);
     },
 
     async saveRouter() {
@@ -73,6 +104,10 @@ export const routersModule = {
         let body = { ...this.newRouter };
         if (this.isEditing && !body.password) {
             delete body.password;
+        }
+        // Clean up empty wan_interface
+        if (!body.wan_interface) {
+            body.wan_interface = null;
         }
         const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) {
@@ -89,4 +124,3 @@ export const routersModule = {
         this.loadRouters();
     }
 };
-
