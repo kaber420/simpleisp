@@ -13,5 +13,6 @@ class Router(SQLModel, table=True):
     port: int = 8728
     is_active: bool = Field(default=True)
     wan_interface: Optional[str] = Field(default=None)
+    use_ssl: bool = Field(default=False)
 
     clients: List["Client"] = Relationship(back_populates="router")

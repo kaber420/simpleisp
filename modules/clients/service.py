@@ -143,3 +143,166 @@ def remove_client_mikrotik(name: str, ip_address: str, settings: dict, router_db
             manager.disconnect(router_db.id)
             if attempt == 1:
                 logger.error(f"Fallo definitivo eliminando {name}: {e}")
+
+
+# --- High-Level Async Service Functions ---
+import asyncio
+from collections import defaultdict
+from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
+from modules.clients.schemas import ClientWithStats
+from modules.settings.service import get_system_settings
+
+
+async def get_client_router(session: AsyncSession, client: Client):
+    """Get the router for a client, or the first available router if not assigned."""
+    if client.router_id:
+        return await session.get(Router, client.router_id)
+    res = await session.execute(select(Router))
+    return res.scalars().first()
+
+
+async def get_all_clients_with_stats(session: AsyncSession) -> List[ClientWithStats]:
+    """
+    Fetches all clients with their queue statistics from MikroTik.
+    Groups clients by router and fetches stats efficiently.
+    """
+    result = await session.execute(
+        select(Client).options(selectinload(Client.router))
+    )
+    clients = result.scalars().all()
+
+    # Group clients by router_id
+    clients_by_router = defaultdict(list)
+    routers_map = {}
+
+    for client in clients:
+        if client.router_id:
+            clients_by_router[client.router_id].append(client)
+            if client.router and client.router_id not in routers_map:
+                routers_map[client.router_id] = client.router
+
+    # Fetch stats from each router
+    router_stats = {}
+    for router_id, router_db in routers_map.items():
+        stats = await asyncio.to_thread(get_router_queue_stats, router_db)
+        router_stats[router_id] = stats
+
+    # Build response with stats
+    clients_with_stats = []
+    for client in clients:
+        stats = {}
+        router_name = None
+
+        if client.router_id and client.router_id in router_stats:
+            stats = router_stats[client.router_id].get(client.ip_address, {})
+            if client.router:
+                router_name = client.router.name
+
+        clients_with_stats.append(ClientWithStats(
+            id=client.id,
+            name=client.name,
+            ip_address=client.ip_address,
+            limit_max_upload=client.limit_max_upload,
+            limit_max_download=client.limit_max_download,
+            billing_day=client.billing_day,
+            status=client.status,
+            created_at=client.created_at,
+            router_id=client.router_id,
+            router_name=router_name,
+            total_upload=stats.get('total_upload', '0 B'),
+            total_download=stats.get('total_download', '0 B'),
+            current_upload_speed=stats.get('current_upload_speed', '0 bps'),
+            current_download_speed=stats.get('current_download_speed', '0 bps'),
+        ))
+
+    return clients_with_stats
+
+
+async def create_new_client(session: AsyncSession, client_data: Client) -> Client:
+    """
+    Creates a new client, assigns a default router if needed, and syncs to MikroTik.
+    """
+    from sqlalchemy.exc import IntegrityError
+    from fastapi import HTTPException
+
+    try:
+        session.add(client_data)
+        await session.commit()
+        await session.refresh(client_data)
+
+        settings = await get_system_settings(session)
+        router_db = await get_client_router(session, client_data)
+
+        if router_db:
+            if not client_data.router_id:
+                client_data.router_id = router_db.id
+                session.add(client_data)
+                await session.commit()
+
+            await asyncio.to_thread(sync_client_mikrotik, client_data, False, settings, router_db)
+
+        return client_data
+    except IntegrityError as e:
+        await session.rollback()
+        if "unique" in str(e).lower() and "ip_address" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Error: La dirección IP ya está registrada.")
+        raise HTTPException(status_code=400, detail="Error de integridad: Verifique los datos (IP duplicada o Router inválido).")
+    except Exception as e:
+        logger.error(f"Error creando cliente: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def update_existing_client(session: AsyncSession, client_id: int, client_data: Client) -> Client:
+    """
+    Updates an existing client and syncs changes to MikroTik.
+    """
+    from fastapi import HTTPException
+
+    client = await session.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    client.name = client_data.name
+    client.ip_address = client_data.ip_address
+    client.limit_max_upload = client_data.limit_max_upload
+    client.limit_max_download = client_data.limit_max_download
+    client.billing_day = client_data.billing_day
+    if client_data.router_id is not None:
+        client.router_id = client_data.router_id
+
+    try:
+        session.add(client)
+        await session.commit()
+        await session.refresh(client)
+
+        settings = await get_system_settings(session)
+        router_db = await get_client_router(session, client)
+
+        if router_db:
+            await asyncio.to_thread(sync_client_mikrotik, client, client.status == 'suspended', settings, router_db)
+
+        return client
+    except Exception as e:
+        logger.error(f"Error actualizando cliente: {e}")
+        raise HTTPException(status_code=500, detail="Error al actualizar.")
+
+
+async def delete_existing_client(session: AsyncSession, client_id: int) -> dict:
+    """
+    Deletes a client and removes it from MikroTik.
+    """
+    client = await session.get(Client, client_id)
+    if client:
+        settings = await get_system_settings(session)
+        router_db = await get_client_router(session, client)
+
+        if router_db:
+            await asyncio.to_thread(remove_client_mikrotik, client.name, client.ip_address, settings, router_db)
+
+        await session.delete(client)
+        await session.commit()
+    return {"ok": True}
+

@@ -5,7 +5,7 @@ export const routersModule = {
     loadingInterfaces: false,
     statsPollingInterval: null,
     showAddRouterModal: false,
-    newRouter: { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '' },
+    newRouter: { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '', use_ssl: false },
 
     formatBytes(bytes, decimals = 1) {
         if (!bytes || bytes === '0 B') return bytes || '0 B';
@@ -85,14 +85,14 @@ export const routersModule = {
     openCreateRouterModal() {
         this.isEditing = false;
         this.routerInterfaces = [];
-        this.newRouter = { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '' };
+        this.newRouter = { name: '', ip_address: '', username: '', password: '', port: 8728, is_active: true, wan_interface: '', use_ssl: false };
         this.showAddRouterModal = true;
     },
 
     openEditRouterModal(router) {
         this.isEditing = true;
         this.editingId = router.id;
-        this.newRouter = { ...router, password: '', wan_interface: router.wan_interface || '' };
+        this.newRouter = { ...router, password: '', wan_interface: router.wan_interface || '', use_ssl: router.use_ssl || false };
         this.showAddRouterModal = true;
         // Load interfaces for this router
         this.loadRouterInterfaces(router.id);

@@ -32,6 +32,8 @@ class RouterConnectionManager:
                 username=router_db.username,
                 password=router_db.password,
                 port=router_db.port,
+                use_ssl=router_db.use_ssl,
+                ssl_verify=False,
                 plaintext_login=True
             )
             api = connection.get_api()
@@ -55,6 +57,8 @@ class RouterConnectionManager:
                     username=router_db.username,
                     password=router_db.password,
                     port=router_db.port,
+                    use_ssl=router_db.use_ssl,
+                    ssl_verify=False,
                     plaintext_login=True
                 )
                 api = connection.get_api()

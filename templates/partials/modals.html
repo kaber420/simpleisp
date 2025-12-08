@@ -114,6 +114,10 @@
                 <input type="checkbox" id="router_active" x-model="newRouter.is_active" class="w-4 h-4">
                 <label for="router_active" class="text-sm text-slate-400">Router Activo</label>
             </div>
+            <div class="flex items-center gap-2 mt-2">
+                <input type="checkbox" id="router_use_ssl" x-model="newRouter.use_ssl" class="w-4 h-4">
+                <label for="router_use_ssl" class="text-sm text-slate-400">Usar API-SSL (puerto 8729)</label>
+            </div>
 
             <div class="flex justify-end gap-3 mt-4">
                 <button type="button" @click="showAddRouterModal = false" class="text-slate-400">Cancelar</button>
