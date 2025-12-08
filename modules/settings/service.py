@@ -35,5 +35,6 @@ async def get_system_settings(session: AsyncSession) -> dict:
         "suspension_speed": all_settings.get("suspension_speed", "1k/1k"),
         "suspension_method": all_settings.get("suspension_method", "queue"), # queue, address_list, both
         "address_list_name": all_settings.get("address_list_name", "clientes_activos"),
-        "grace_days": all_settings.get("grace_days", "3")
+        "grace_days": all_settings.get("grace_days", "3"),
+        "suspension_check_time": all_settings.get("suspension_check_time", "09:00")
     }

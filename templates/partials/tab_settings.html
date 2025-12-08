@@ -18,6 +18,15 @@
             </div>
 
             <div>
+                <label class="block text-sm text-yellow-400 font-bold mb-1">Hora de Revisión Diaria</label>
+                <input type="time" x-model="settings.suspension_check_time"
+                    class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none">
+                <p class="text-xs text-slate-500 mt-1">
+                    Hora a la que se ejecutará la revisión automática de cortes cada día.
+                </p>
+            </div>
+
+            <div>
                 <label class="block text-sm text-blue-400 font-bold mb-1">Método de Suspensión</label>
                 <select x-model="settings.suspension_method"
                     class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
@@ -69,7 +78,8 @@
                 <h4 class="text-white font-bold">Ejecutar Cortes y Suspensiones</h4>
                 <p class="text-sm text-slate-400">
                     Fuerza la revisión de todos los clientes y suspende a los morosos inmediatamente.<br>
-                    <span class="text-xs text-yellow-500">Nota:</span> Esto ya se ejecuta automáticamente cada hora.
+                    <span class="text-xs text-yellow-500">Nota:</span> Esto ya se ejecuta automáticamente cada día a la
+                    hora configurada.
                 </p>
             </div>
             <button @click="runSuspensions"
