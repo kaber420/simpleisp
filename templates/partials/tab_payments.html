@@ -28,18 +28,30 @@
 
                 <!-- Calendario de Meses -->
                 <div x-show="newPayment.client_id" class="space-y-2">
-                    <label class="block text-sm text-slate-400 mb-2">Selecciona el mes a pagar</label>
-                    <div
-                        class="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto p-2 bg-slate-900 rounded border border-slate-700">
+                    <!-- Year Selector -->
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-sm text-slate-400">Selecciona el año y mes a pagar</label>
+                        <div class="flex items-center gap-2">
+                            <template x-for="year in getAvailableYears()" :key="year">
+                                <button type="button" @click="changeYear(year)" :class="{
+                                        'bg-blue-600 text-white': selectedYear === year,
+                                        'bg-slate-700 hover:bg-slate-600 text-white': selectedYear !== year
+                                    }" class="px-3 py-1 rounded text-sm font-semibold transition" x-text="year">
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- Month Grid -->
+                    <div class="grid grid-cols-3 gap-2 p-3 bg-slate-900 rounded border border-slate-700">
                         <template x-for="monthObj in paymentMonths" :key="monthObj.value">
                             <button type="button" @click="selectMonth(monthObj)" :disabled="monthObj.paid" :class="{
                                             'bg-green-600 text-white': monthObj.paid,
                                             'bg-blue-600 text-white ring-2 ring-blue-400': !monthObj.paid && newPayment.month_paid === monthObj.value,
                                             'bg-slate-700 hover:bg-slate-600 text-white': !monthObj.paid && newPayment.month_paid !== monthObj.value,
                                             'opacity-50 cursor-not-allowed': monthObj.paid
-                                        }" class="p-2 rounded text-xs font-semibold transition relative">
+                                        }" class="p-3 rounded text-sm font-semibold transition relative">
                                 <div x-text="monthObj.label"></div>
-                                <div x-show="monthObj.paid" class="text-xs mt-1">✓ Pagado</div>
+                                <div x-show="monthObj.paid" class="text-xs mt-1">✓</div>
                                 <div x-show="monthObj.isCurrent && !monthObj.paid"
                                     class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full"></div>
                             </button>

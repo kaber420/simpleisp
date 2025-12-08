@@ -4,6 +4,20 @@ export const paymentsModule = {
     paymentMonths: [],
     paymentSearchQuery: '',
     isPaymentDropdownOpen: false,
+    selectedYear: new Date().getFullYear(),
+
+    getAvailableYears() {
+        const currentYear = new Date().getFullYear();
+        // Allow current year, next year, and one year after
+        return [currentYear, currentYear + 1, currentYear + 2];
+    },
+
+    changeYear(year) {
+        this.selectedYear = year;
+        if (this.newPayment.client_id) {
+            this.generatePaymentMonths();
+        }
+    },
 
     getFilteredPaymentClients() {
         if (!this.paymentSearchQuery) return this.clients;
@@ -23,6 +37,7 @@ export const paymentsModule = {
         this.paymentSearchQuery = '';
         this.paymentHistory = [];
         this.paymentMonths = [];
+        this.selectedYear = new Date().getFullYear();
     },
 
     async submitPayment() {
@@ -63,19 +78,24 @@ export const paymentsModule = {
         // Cargar historial
         await this.loadHistory(clientId);
 
-        // Generar array de meses (6 anteriores + mes actual + 5 futuros)
+        // Generar meses para el año seleccionado
+        this.generatePaymentMonths();
+    },
+
+    generatePaymentMonths() {
         const months = [];
         const today = new Date();
         const currentMonth = today.toISOString().slice(0, 7);
 
-        for (let i = -6; i <= 5; i++) {
-            const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+        // Generar los 12 meses del año seleccionado
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(this.selectedYear, i, 1);
             const monthValue = date.toISOString().slice(0, 7);
             const paid = this.paymentHistory.some(p => p.month_paid === monthValue);
 
             months.push({
                 value: monthValue,
-                label: this.formatMonth(monthValue),
+                label: this.formatMonthShort(monthValue),
                 paid: paid,
                 isCurrent: monthValue === currentMonth
             });
@@ -88,6 +108,12 @@ export const paymentsModule = {
         if (!monthObj.paid) {
             this.newPayment.month_paid = monthObj.value;
         }
+    },
+
+    formatMonthShort(monthStr) {
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const [year, month] = monthStr.split('-');
+        return months[parseInt(month) - 1];
     },
 
     formatMonth(monthStr) {
