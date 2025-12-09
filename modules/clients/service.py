@@ -187,9 +187,16 @@ async def get_all_clients_with_stats(session: AsyncSession) -> List[ClientWithSt
 
     # Fetch stats from each router
     router_stats = {}
+    # Fetch stats from each router concurrently
+    tasks = []
+    router_ids = []
     for router_id, router_db in routers_map.items():
-        stats = await asyncio.to_thread(get_router_queue_stats, router_db)
-        router_stats[router_id] = stats
+        tasks.append(asyncio.to_thread(get_router_queue_stats, router_db))
+        router_ids.append(router_id)
+    
+    results = await asyncio.gather(*tasks)
+    
+    router_stats = {r_id: stats for r_id, stats in zip(router_ids, results)}
 
     # Build response with stats
     clients_with_stats = []

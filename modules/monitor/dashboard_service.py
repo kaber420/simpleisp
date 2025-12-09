@@ -57,9 +57,9 @@ async def get_dashboard_summary(session: AsyncSession) -> dict:
     
     # Check each router's connectivity (run in thread pool)
     router_statuses = []
-    for router_obj in routers:
-        status = await asyncio.to_thread(check_router_online, router_obj)
-        router_statuses.append(status)
+    # Check each router's connectivity (concurrently)
+    tasks = [asyncio.to_thread(check_router_online, router_obj) for router_obj in routers]
+    router_statuses = await asyncio.gather(*tasks)
     
     # Aggregate router stats
     online_routers = [r for r in router_statuses if r["online"]]
