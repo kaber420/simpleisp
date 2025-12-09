@@ -55,6 +55,7 @@ def get_router_queue_stats(router_db: Router) -> Dict[str, Dict[str, Any]]:
                 }
     except Exception as e:
         logger.warning(f"Error fetching queue stats from router {router_db.name}: {e}")
+        manager.disconnect(router_db.id)
     
     return stats
 

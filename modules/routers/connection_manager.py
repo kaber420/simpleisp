@@ -21,12 +21,14 @@ class RouterConnectionManager:
         """Devuelve una conexión existente o crea una nueva si no existe.
         NOTA: Para operaciones thread-safe, use get_locked_connection() en su lugar.
         """
+        # 1. Fast check (con lock)
         with self._init_lock:
             if router_db.id in self._connections:
                 pool, api, lock = self._connections[router_db.id]
                 return api
-            
-            # Crear nueva conexión persistente
+
+        # 2. Crear conexión (SIN lock global) - Esto previene que una mala conexión bloquee todo
+        try:
             connection = routeros_api.RouterOsApiPool(
                 router_db.ip_address,
                 username=router_db.username,
@@ -37,8 +39,20 @@ class RouterConnectionManager:
                 plaintext_login=True
             )
             api = connection.get_api()
-            lock = threading.RLock()
-            self._connections[router_db.id] = (connection, api, lock)
+            new_lock = threading.RLock()
+        except Exception:
+            # Si falla la conexión, propagamos el error pero NO bloqueamos a otros
+            raise
+
+        # 3. Guardar conexión (con lock)
+        with self._init_lock:
+            # Verificar si alguien más conectó mientras lo hacíamos
+            if router_db.id in self._connections:
+                connection.disconnect() # Descartar la nuestra
+                pool, api, lock = self._connections[router_db.id]
+                return api
+            
+            self._connections[router_db.id] = (connection, api, new_lock)
             return api
 
     @contextmanager
@@ -49,10 +63,17 @@ class RouterConnectionManager:
             with manager.get_locked_connection(router) as api:
                 api.get_resource('/queue/simple').get()
         """
-        # Primero asegurarse de que la conexión existe
+        # 1. Intentar obtener conexión existente
+        pool = api = lock = None
+        
         with self._init_lock:
-            if router_db.id not in self._connections:
-                connection = routeros_api.RouterOsApiPool(
+            if router_db.id in self._connections:
+                pool, api, lock = self._connections[router_db.id]
+
+        # 2. Si no existe, crearla (fuera del lock)
+        if not api:
+            try:
+                new_pool = routeros_api.RouterOsApiPool(
                     router_db.ip_address,
                     username=router_db.username,
                     password=router_db.password,
@@ -61,13 +82,20 @@ class RouterConnectionManager:
                     ssl_verify=False,
                     plaintext_login=True
                 )
-                api = connection.get_api()
-                lock = threading.RLock()
-                self._connections[router_db.id] = (connection, api, lock)
+                new_api = new_pool.get_api()
+                new_lock = threading.RLock()
+            except Exception:
+                raise
+
+            with self._init_lock:
+                if router_db.id in self._connections:
+                    new_pool.disconnect()
+                    pool, api, lock = self._connections[router_db.id]
+                else:
+                    pool, api, lock = new_pool, new_api, new_lock
+                    self._connections[router_db.id] = (pool, api, lock)
         
-        pool, api, lock = self._connections[router_db.id]
-        
-        # Adquirir el lock específico del router
+        # 3. Usar el lock específico del router
         lock.acquire()
         try:
             yield api

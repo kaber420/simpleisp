@@ -46,6 +46,7 @@ def fetch_router_interfaces(router_obj):
             return result
     except Exception as e:
         logger.error(f"Error fetching interfaces for router {router_obj.name}: {e}")
+        manager.disconnect(router_obj.id)
         return []
 
 
@@ -61,6 +62,7 @@ def fetch_router_stats(router_obj):
     """
     try:
         with manager.get_locked_connection(router_obj) as api:
+            # Check connection alive first with a lightweight call or just proceed
             resource = api.get_resource('/system/resource').get()
             
             if not resource:
@@ -107,5 +109,7 @@ def fetch_router_stats(router_obj):
 
     except Exception as e:
         logger.error(f"Error fetching stats for router {router_obj.name}: {e}")
+        # Force disconnect to allow reconnection on next attempt
+        manager.disconnect(router_obj.id)
         return {"online": False, "error": str(e)}
 
