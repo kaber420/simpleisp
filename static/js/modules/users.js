@@ -36,12 +36,13 @@ export const usersModule = {
             email: user.email,
             password: '',
             telegram_chat_id: user.telegram_chat_id || '',
-            receive_alerts: user.receive_alerts !== false,
-            is_superuser: user.is_superuser || false,
-            is_active: user.is_active !== false
+            receive_alerts: Boolean(user.receive_alerts),
+            is_superuser: Boolean(user.is_superuser),
+            is_active: Boolean(user.is_active)
         };
         this.showEditUserModal = true;
     },
+
 
     async createUser() {
         try {
