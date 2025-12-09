@@ -1,0 +1,121 @@
+<!-- Tab Notificaciones -->
+<div x-show="currentTab === 'notifications'" x-cloak>
+    <h2 class="text-2xl font-bold mb-6">📡 Notificaciones de Telegram</h2>
+
+    <!-- Bot Configuration Section -->
+    <div class="card p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            🤖 Configuración del Bot
+            <span x-show="botStatus === 'connected'" class="text-green-500 text-sm font-normal">● Conectado</span>
+            <span x-show="botStatus === 'disconnected'" class="text-red-500 text-sm font-normal">○ Desconectado</span>
+            <span x-show="botStatus === 'checking'" class="text-yellow-500 text-sm font-normal">⟳ Verificando...</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Token del Bot (de @BotFather)</label>
+                <input type="password" x-model="telegramToken"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    placeholder="123456789:ABCdefGHI..." @focus="$el.type = 'text'" @blur="$el.type = 'password'">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Nombre del Bot (opcional)</label>
+                <input type="text" x-model="telegramBotName"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    placeholder="SimpleISP Bot">
+            </div>
+        </div>
+
+        <div class="flex gap-2">
+            <button @click="saveTelegramToken()"
+                class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold transition">
+                💾 Guardar Token
+            </button>
+            <button @click="restartBot()"
+                class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-semibold transition"
+                :disabled="!telegramToken">
+                🔄 Reiniciar Bot
+            </button>
+        </div>
+    </div>
+
+    <!-- Account Linking Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Automatic Method -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4">🔑 Método Automático</h3>
+            <div class="text-slate-400 text-sm mb-4 space-y-2">
+                <p>1. Abre tu bot en Telegram</p>
+                <p>2. Genera un código de vinculación aquí</p>
+                <p>3. Envía <code class="bg-slate-800 px-2 py-0.5 rounded">/link CODIGO</code> al bot</p>
+            </div>
+
+            <button @click="generateLinkCode()"
+                class="w-full bg-green-600 hover:bg-green-500 px-4 py-3 rounded-lg font-semibold transition mb-3">
+                🔄 Generar Código
+            </button>
+
+            <div x-show="linkCode" class="bg-slate-800 border border-slate-700 rounded-lg p-4 text-center">
+                <p class="text-slate-400 text-sm mb-2">Tu código (válido por 5 minutos):</p>
+                <code class="text-2xl font-mono font-bold text-green-400" x-text="linkCode"></code>
+                <p class="text-slate-500 text-xs mt-2">Envía: <span class="text-slate-300">/link <span
+                            x-text="linkCode"></span></span></p>
+            </div>
+        </div>
+
+        <!-- Manual Method -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4">✏️ Método Manual</h3>
+            <div class="text-slate-400 text-sm mb-4 space-y-2">
+                <p>1. Abre <a href="https://t.me/userinfobot" target="_blank"
+                        class="text-blue-400 hover:underline">@userinfobot</a> en Telegram</p>
+                <p>2. El bot te mostrará tu Chat ID</p>
+                <p>3. Pega tu Chat ID aquí</p>
+            </div>
+
+            <div class="flex gap-2">
+                <input type="text" x-model="manualChatId"
+                    class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    placeholder="123456789">
+                <button @click="saveChatId()"
+                    class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold transition"
+                    :disabled="!manualChatId">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status and Test Section -->
+    <div class="card p-6">
+        <h3 class="text-lg font-semibold mb-4">🔔 Estado de Notificaciones</h3>
+
+        <div class="flex items-center justify-between mb-4 p-4 bg-slate-800 rounded-lg">
+            <div>
+                <span class="font-medium">Tu cuenta:</span>
+                <span x-show="telegramLinked" class="text-green-400 ml-2">✓ Vinculada</span>
+                <span x-show="!telegramLinked" class="text-slate-400 ml-2">No vinculada</span>
+                <span x-show="telegramLinked && userChatId" class="text-slate-500 text-sm ml-2">(ID: <span
+                        x-text="userChatId"></span>)</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" x-model="receiveAlerts" @change="toggleAlerts()"
+                        class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm">Recibir alertas</span>
+                </label>
+            </div>
+        </div>
+
+        <button @click="sendTestAlert()"
+            class="w-full bg-purple-600 hover:bg-purple-500 px-4 py-3 rounded-lg font-semibold transition"
+            :disabled="!telegramLinked || botStatus !== 'connected'">
+            🔔 Enviar Mensaje de Prueba
+        </button>
+
+        <p x-show="!telegramLinked" class="text-slate-500 text-sm mt-2 text-center">
+            Vincula tu cuenta primero para enviar mensajes de prueba
+        </p>
+    </div>
+</div>

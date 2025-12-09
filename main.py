@@ -29,6 +29,7 @@ from modules.routers.router import router as routers_router
 from modules.auth.router import router as users_custom_router
 from modules.billing.service import check_suspensions
 from modules.monitor.router_cache import router_status_worker
+from modules.bot.service import start_telegram_bot
 
 # Importar Auth
 from modules.auth.config import fastapi_users, auth_backend, current_active_user
@@ -45,6 +46,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     asyncio.create_task(check_suspensions())
     asyncio.create_task(router_status_worker(check_interval=30))  # Check routers every 30s
+    asyncio.create_task(start_telegram_bot())  # Start Telegram bot with token from DB
     yield
     # Shutdown (add cleanup code here if needed)
 

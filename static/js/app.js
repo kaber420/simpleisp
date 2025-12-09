@@ -4,6 +4,7 @@ import { paymentsModule } from './modules/payments.js';
 import { usersModule } from './modules/users.js';
 import { settingsModule } from './modules/settings.js';
 import { dashboardModule } from './modules/dashboard.js';
+import { notificationsModule } from './modules/notifications.js';
 
 window.appData = function () {
     return {
@@ -19,6 +20,7 @@ window.appData = function () {
         ...usersModule,
         ...settingsModule,
         ...dashboardModule,
+        ...notificationsModule,
 
         init() {
             this.loadClients();

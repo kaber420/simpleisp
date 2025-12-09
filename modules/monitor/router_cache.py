@@ -128,6 +128,7 @@ async def router_status_worker(check_interval: int = 30):
     """
     Background worker that periodically checks router connectivity
     and updates the cache. Runs independently of user requests.
+    Sends Telegram alerts when router status changes.
     """
     from database import async_session_maker
     from sqlmodel import select
@@ -149,18 +150,42 @@ async def router_status_worker(check_interval: int = 30):
                 tasks = [asyncio.to_thread(check_router_connectivity, r) for r in routers]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 
-                # Update cache with results
+                # Update cache with results and detect state changes
                 for result in results:
                     if isinstance(result, Exception):
                         logger.error(f"Error checking router: {result}")
                         continue
                     
+                    router_id = result["router_id"]
+                    new_online = result["online"]
+                    router_name = result["name"]
+                    router_ip = result["ip_address"]
+                    error = result["error"]
+                    
+                    # Get previous status before updating cache
+                    prev_status = cache.get_status(router_id)
+                    
+                    # Detect state transitions (only after initial population)
+                    if prev_status is not None:
+                        was_online = prev_status.online
+                        
+                        # Router went OFFLINE
+                        if was_online and not new_online:
+                            logger.warning(f"🔴 Router {router_name} went OFFLINE")
+                            asyncio.create_task(_send_router_alert("down", router_name, router_ip, error))
+                        
+                        # Router came back ONLINE
+                        elif not was_online and new_online:
+                            logger.info(f"🟢 Router {router_name} is back ONLINE")
+                            asyncio.create_task(_send_router_alert("up", router_name, router_ip))
+                    
+                    # Update cache
                     cache.update_status(
-                        router_id=result["router_id"],
-                        name=result["name"],
-                        ip_address=result["ip_address"],
-                        online=result["online"],
-                        error=result["error"]
+                        router_id=router_id,
+                        name=router_name,
+                        ip_address=router_ip,
+                        online=new_online,
+                        error=error
                     )
                 
                 online_count = sum(1 for r in results if isinstance(r, dict) and r.get("online"))
@@ -172,6 +197,15 @@ async def router_status_worker(check_interval: int = 30):
         except Exception as e:
             logger.error(f"Router status worker error: {e}")
             await asyncio.sleep(10)  # Short retry on error
+
+
+async def _send_router_alert(alert_type: str, name: str, ip: str, error: str = None):
+    """Helper to send router alerts via Telegram bot."""
+    try:
+        from modules.bot.service import broadcast_alert
+        await broadcast_alert(alert_type, name, ip, error)
+    except Exception as e:
+        logger.error(f"Failed to send Telegram alert: {e}")
 
 
 # Global cache instance
