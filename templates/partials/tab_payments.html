@@ -49,9 +49,10 @@
                                             'bg-blue-600 text-white ring-2 ring-blue-400': !monthObj.paid && newPayment.month_paid === monthObj.value,
                                             'bg-slate-700 hover:bg-slate-600 text-white': !monthObj.paid && newPayment.month_paid !== monthObj.value,
                                             'opacity-50 cursor-not-allowed': monthObj.paid
-                                        }" class="p-3 rounded text-sm font-semibold transition relative">
-                                <div x-text="monthObj.label"></div>
-                                <div x-show="monthObj.paid" class="text-xs mt-1">✓</div>
+                                        }"
+                                class="p-3 rounded text-sm font-semibold transition relative flex items-center justify-center gap-1">
+                                <span x-show="monthObj.paid" class="text-xs">✓</span>
+                                <span x-text="monthObj.label"></span>
                                 <div x-show="monthObj.isCurrent && !monthObj.paid"
                                     class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full"></div>
                             </button>
