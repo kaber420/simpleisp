@@ -1,5 +1,8 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
+
+import uvicorn
 from fastapi import FastAPI, Request, Depends, Response, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -151,3 +154,10 @@ async def dashboard(request: Request, user: User = Depends(current_active_user))
         "request": request,
         "user": user
     })
+
+
+# --- ENTRY POINT ---
+if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8006"))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
