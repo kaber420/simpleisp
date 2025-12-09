@@ -14,6 +14,11 @@ export const dashboardModule = {
             if (response.ok) {
                 this.dashboardData = await response.json();
                 this.renderClientsChart();
+
+                // If routers are still being checked, refresh in 3 seconds
+                if (this.dashboardData.routers?.checking) {
+                    setTimeout(() => this.loadDashboardSummary(), 3000);
+                }
             }
         } catch (error) {
             console.error('Error loading dashboard summary:', error);

@@ -1,49 +1,25 @@
 """
 Dashboard service for aggregated statistics.
+Now uses cached router status for instant response.
 """
-import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select, func
 
 from modules.clients.models import Client
 from modules.routers.models import Router
-from modules.routers.connection_manager import manager
-from utils.logging import logger
-
-
-def check_router_online(router_obj) -> dict:
-    """
-    Checks if a router is reachable by attempting a quick API call.
-    Returns router info with online status.
-    """
-    try:
-        with manager.get_locked_connection(router_obj) as api:
-            # Quick identity check
-            api.get_resource('/system/identity').get()
-            return {
-                "id": router_obj.id,
-                "name": router_obj.name,
-                "ip_address": router_obj.ip_address,
-                "online": True
-            }
-    except Exception as e:
-        logger.warning(f"Router {router_obj.name} offline: {e}")
-        return {
-            "id": router_obj.id,
-            "name": router_obj.name,
-            "ip_address": router_obj.ip_address,
-            "online": False,
-            "error": str(e)
-        }
+from modules.monitor.router_cache import router_cache
 
 
 async def get_dashboard_summary(session: AsyncSession) -> dict:
     """
-    Returns aggregated dashboard statistics:
-    - Routers: online count, offline count, list of offline routers
-    - Clients: active count, suspended count
+    Returns aggregated dashboard statistics INSTANTLY:
+    - Clients: active/suspended counts (from DB - fast)
+    - Routers: online/offline counts (from cache - instant)
+    
+    No network calls are made here. Router status comes from
+    the background worker that updates the cache periodically.
     """
-    # Get client counts by status
+    # Get client counts by status (fast DB query)
     clients_result = await session.execute(
         select(Client.status, func.count(Client.id)).group_by(Client.status)
     )
@@ -51,26 +27,39 @@ async def get_dashboard_summary(session: AsyncSession) -> dict:
     clients_active = client_counts.get("active", 0)
     clients_suspended = client_counts.get("suspended", 0)
     
-    # Get all routers
-    routers_result = await session.execute(select(Router).where(Router.is_active == True))
-    routers = routers_result.scalars().all()
+    # Get router count from DB (for total, in case cache is not yet populated)
+    routers_result = await session.execute(
+        select(func.count(Router.id)).where(Router.is_active == True)
+    )
+    total_routers = routers_result.scalar() or 0
     
-    # Check each router's connectivity (run in thread pool)
-    router_statuses = []
-    # Check each router's connectivity (concurrently)
-    tasks = [asyncio.to_thread(check_router_online, router_obj) for router_obj in routers]
-    router_statuses = await asyncio.gather(*tasks)
+    # Get router status from cache (INSTANT - no network calls)
+    cache_summary = router_cache.get_summary()
     
-    # Aggregate router stats
-    online_routers = [r for r in router_statuses if r["online"]]
-    offline_routers = [r for r in router_statuses if not r["online"]]
+    # If cache is not yet initialized, show DB count with "checking" status
+    if not cache_summary["initialized"]:
+        return {
+            "routers": {
+                "total": total_routers,
+                "online": 0,
+                "offline": 0,
+                "offline_list": [],
+                "checking": True  # Frontend can show "Verificando..."
+            },
+            "clients": {
+                "total": clients_active + clients_suspended,
+                "active": clients_active,
+                "suspended": clients_suspended
+            }
+        }
     
     return {
         "routers": {
-            "total": len(router_statuses),
-            "online": len(online_routers),
-            "offline": len(offline_routers),
-            "offline_list": offline_routers
+            "total": cache_summary["total"],
+            "online": cache_summary["online"],
+            "offline": cache_summary["offline"],
+            "offline_list": cache_summary["offline_list"],
+            "checking": False
         },
         "clients": {
             "total": clients_active + clients_suspended,

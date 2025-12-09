@@ -25,6 +25,7 @@ from modules.settings.router import router as settings_router
 from modules.routers.router import router as routers_router
 from modules.auth.router import router as users_custom_router
 from modules.billing.service import check_suspensions
+from modules.monitor.router_cache import router_status_worker
 
 # Importar Auth
 from modules.auth.config import fastapi_users, auth_backend, current_active_user
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
     # Startup
     await init_db()
     asyncio.create_task(check_suspensions())
+    asyncio.create_task(router_status_worker(check_interval=30))  # Check routers every 30s
     yield
     # Shutdown (add cleanup code here if needed)
 
