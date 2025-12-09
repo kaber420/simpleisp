@@ -4,7 +4,7 @@ Telegram Bot Service - Handles bot lifecycle, commands, and alert broadcasting.
 import asyncio
 from typing import Optional
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandStart, Filter
 from aiogram.types import Message
 
 from utils.logging import logger
@@ -77,6 +77,24 @@ async def link_user_by_token(link_token: str, chat_id: str) -> Optional[str]:
         return None
 
 
+async def is_telegram_user_allowed(chat_id: str) -> bool:
+    """Check if the user is allowed to interact with the bot."""
+    from database import async_session_maker
+    from sqlmodel import select
+    from modules.auth.models import User
+    
+    try:
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(User).where(User.telegram_chat_id == chat_id)
+            )
+            user = result.scalars().first()
+            return user is not None
+    except Exception as e:
+        logger.error(f"Error checking telegram user allowance: {e}")
+        return False
+
+
 async def get_router_summary() -> dict:
     """Get summary of router statuses."""
     from modules.monitor.router_cache import router_cache
@@ -86,21 +104,11 @@ async def get_router_summary() -> dict:
 def setup_handlers(dp: Dispatcher):
     """Set up bot command handlers."""
     
-    @dp.message(CommandStart())
-    async def cmd_start(message: Message):
-        """Handle /start command."""
-        await message.answer(
-            "🌐 *¡Bienvenido a SimpleISP Bot!*\n\n"
-            "Este bot te enviará alertas cuando un router se caiga o se recupere.\n\n"
-            "*Comandos disponibles:*\n"
-            "• /link CODIGO - Vincular tu cuenta\n"
-            "• /resumen - Ver estado de la red\n"
-            "• /caidos - Ver routers offline\n\n"
-            "Para vincular tu cuenta, genera un código en el panel web y envía:\n"
-            "`/link TU_CODIGO`",
-            parse_mode="Markdown"
-        )
-    
+    class IsUnknownUser(Filter):
+        """Filter to check if user is NOT known/allowed."""
+        async def __call__(self, message: Message) -> bool:
+            return not await is_telegram_user_allowed(str(message.chat.id))
+
     @dp.message(Command("link"))
     async def cmd_link(message: Message):
         """Handle /link command to link Telegram account."""
@@ -134,7 +142,35 @@ def setup_handlers(dp: Dispatcher):
                 "Genera un nuevo código en el panel web → Notificaciones",
                 parse_mode="Markdown"
             )
-    
+
+    @dp.message(IsUnknownUser())
+    async def reject_unauthorized(message: Message):
+        """Reject unauthorized users."""
+        chat_id = message.chat.id
+        await message.answer(
+            "⛔ *Acceso Denegado*\n\n"
+            "Este bot es privado y solo responde a usuarios registrados.\n\n"
+            f"🆔 Tu Chat ID: `{chat_id}`\n\n"
+            "Por favor, comparte este ID con el administrador para solicitar acceso\n"
+            "o usa el comando `/link CODIGO` si tienes un código de vinculación.",
+            parse_mode="Markdown"
+        )
+
+    @dp.message(CommandStart())
+    async def cmd_start(message: Message):
+        """Handle /start command."""
+        await message.answer(
+            "🌐 *¡Bienvenido a SimpleISP Bot!*\n\n"
+            "Este bot te enviará alertas cuando un router se caiga o se recupere.\n\n"
+            "*Comandos disponibles:*\n"
+            "• /link CODIGO - Vincular tu cuenta\n"
+            "• /resumen - Ver estado de la red\n"
+            "• /caidos - Ver routers offline\n\n"
+            "Para vincular tu cuenta, genera un código en el panel web y envía:\n"
+            "`/link TU_CODIGO`",
+            parse_mode="Markdown"
+        )
+
     @dp.message(Command("resumen"))
     async def cmd_resumen(message: Message):
         """Handle /resumen command to show network summary."""
