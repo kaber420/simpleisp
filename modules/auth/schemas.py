@@ -1,9 +1,11 @@
+from typing import Optional
 from fastapi_users import schemas
 
 
 class UserRead(schemas.BaseUser[int]):
     """Schema para leer datos de usuario (sin password)"""
-    pass
+    telegram_chat_id: Optional[str] = None
+    receive_alerts: bool = True
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -13,4 +15,5 @@ class UserCreate(schemas.BaseUserCreate):
 
 class UserUpdate(schemas.BaseUserUpdate):
     """Schema para actualizar usuario"""
-    pass
+    telegram_chat_id: Optional[str] = None
+    receive_alerts: Optional[bool] = None

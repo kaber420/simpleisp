@@ -2,7 +2,9 @@ export const usersModule = {
     users: [],
     userLoadError: '',
     showCreateUserModal: false,
+    showEditUserModal: false,
     newUser: { email: '', password: '', is_superuser: false },
+    editUser: { id: null, email: '', password: '', telegram_chat_id: '', receive_alerts: true, is_superuser: false, is_active: true },
 
     async loadUsers() {
         this.userLoadError = '';
@@ -28,6 +30,19 @@ export const usersModule = {
         this.showCreateUserModal = true;
     },
 
+    openEditUserModal(user) {
+        this.editUser = {
+            id: user.id,
+            email: user.email,
+            password: '',
+            telegram_chat_id: user.telegram_chat_id || '',
+            receive_alerts: user.receive_alerts !== false,
+            is_superuser: user.is_superuser || false,
+            is_active: user.is_active !== false
+        };
+        this.showEditUserModal = true;
+    },
+
     async createUser() {
         try {
             const res = await fetch('/auth/register', {
@@ -45,6 +60,40 @@ export const usersModule = {
             }
         } catch (error) {
             alert('Error de conexión');
+        }
+    },
+
+    async updateUser() {
+        try {
+            const payload = {
+                email: this.editUser.email,
+                telegram_chat_id: this.editUser.telegram_chat_id || null,
+                receive_alerts: this.editUser.receive_alerts,
+                is_superuser: this.editUser.is_superuser,
+                is_active: this.editUser.is_active
+            };
+
+            // Only include password if provided
+            if (this.editUser.password) {
+                payload.password = this.editUser.password;
+            }
+
+            const res = await fetch(`/api/users/${this.editUser.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert('Usuario actualizado exitosamente');
+                this.showEditUserModal = false;
+                await this.loadUsers();
+            } else {
+                const error = await res.json();
+                alert(error.detail || 'Error al actualizar usuario');
+            }
+        } catch (error) {
+            alert('Error de conexión: ' + error.message);
         }
     },
 
@@ -91,3 +140,4 @@ export const usersModule = {
         }
     }
 };
+
