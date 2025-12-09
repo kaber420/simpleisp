@@ -36,6 +36,7 @@ from modules.auth.schemas import UserRead, UserCreate, UserUpdate
 from modules.auth.dependencies import get_current_admin_user
 from modules.auth.manager import get_user_manager
 from modules.auth.database import get_user_db
+from modules.auth.middleware import AuthRedirectMiddleware
 
 # --- LIFESPAN EVENT HANDLER ---
 @asynccontextmanager
@@ -49,6 +50,10 @@ async def lifespan(app: FastAPI):
 
 # --- APP FASTAPI ---
 app = FastAPI(title="SimpleISP", lifespan=lifespan)
+
+# Add authentication redirect middleware
+app.add_middleware(AuthRedirectMiddleware)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
